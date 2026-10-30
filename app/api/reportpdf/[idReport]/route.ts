@@ -4,7 +4,9 @@ export async function GET(
   request: Request,
   { params }: { params: { idReport: number } },
 ) {
-  const browser = await puppeteer.launch()
+  const browser = await puppeteer.launch({
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  })
   const page = await browser.newPage()
   await page.setViewport({ width: 1600, height: 1024 })
   await page.goto(`${process.env.URL_APP}/reportviewer/${params.idReport}`, {
@@ -23,7 +25,7 @@ export async function GET(
 
   await browser.close()
 
-  return new Response(pdf, {
+  return new Response(new Uint8Array(pdf), {
     headers: {
       'Content-Type': 'application/pdf',
     },

@@ -1,8 +1,0 @@
-services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: app_report_prod
-    restart: unless-stopped
-    network_mode: "host"

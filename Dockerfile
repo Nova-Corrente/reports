@@ -1,68 +1,32 @@
-# Etapa 1: Construção
+# Imagem Debian (glibc): o Chromium do apt, usado pelo puppeteer no PDF, não roda em alpine
+FROM node:20-slim
 
-# Imagem base
-FROM node:18-alpine AS builder
-
-# Diretório de trabalho
 WORKDIR /app
 
-# Copiar arquivos
-COPY package.json ./
+# openssl: exigido pelo Prisma | chromium: gera o PDF do relatório
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl chromium fonts-liberation \
+  && rm -rf /var/lib/apt/lists/*
 
-# Instalar dependências
+# Usa o Chromium do sistema em vez de baixar outro no npm install
+ENV PUPPETEER_SKIP_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
+COPY package.json .npmrc ./
 RUN npm install
 
-# Copiar arquivos
 COPY . .
 
-# executar prisma generate
 RUN npx prisma generate
 
-# Construir aplicação
+# O next.config.mjs lê STORAGE_ENDPOINT no build: o Coolify precisa
+# expor essa variável também em build time
 RUN npm run build
 
-# remover dependências de desenvolvimento
-RUN npm prune --production
+ENV NODE_ENV=production \
+    PORT=3000
 
-# Etapa 2: Execução
+EXPOSE 3000
 
-# Imagem base
-FROM node:18-alpine
-
-# Diretório de trabalho
-WORKDIR /app
-
-# Copiar arquivos
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/package-lock.json ./
-# COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/next.config.mjs ./
-COPY --from=builder /app/assets ./assets
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/components ./components
-COPY --from=builder /app/config ./config
-COPY --from=builder /app/hooks ./hooks
-COPY --from=builder /app/lib ./lib
-COPY --from=builder /app/service ./service
-COPY --from=builder /app/types ./types
-COPY --from=builder /app/.env ./
-COPY --from=builder /app/middleware.ts ./
-COPY --from=builder /app/postcss.config.mjs ./
-COPY --from=builder /app/tailwind.config.ts ./
-COPY --from=builder /app/tsconfig.json ./
-
-# Instalar dependências em produção
-RUN npm install --only=production
-
-# Variáveis de ambiente
-ENV NODE_ENV=production
-
-# executar prisma generate
-RUN npx prisma generate
-
-# Porta de execução
-EXPOSE 8088
-
-# Comando de execução
-CMD ["npm", "start"]
+# Aplica as migrations pendentes e sobe o app. As variáveis vêm do Coolify (sem .env na imagem)
+CMD ["sh", "-c", "npx prisma migrate deploy && npx next start -p ${PORT}"]

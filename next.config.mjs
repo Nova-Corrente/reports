@@ -1,7 +1,21 @@
+// Host do MinIO/S3 atual (as imagens são servidas direto do storage)
+const storageUrl = process.env.STORAGE_ENDPOINT
+  ? new URL(process.env.STORAGE_ENDPOINT)
+  : null
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
     remotePatterns: [
+      ...(storageUrl
+        ? [
+            {
+              protocol: storageUrl.protocol.replace(':', ''),
+              hostname: storageUrl.hostname,
+              port: storageUrl.port,
+            },
+          ]
+        : []),
       {
         protocol: 'https',
         hostname: 'via.placeholder.com',
