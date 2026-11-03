@@ -30,6 +30,8 @@ export async function GET(request: Request, { params }: { params: { idReport: nu
 
     const pdf = await page.pdf({
       format: 'LETTER',
+      // O padrão é 30s; relatórios com centenas de fotos passam disso com o servidor ocupado
+      timeout: 120_000,
       printBackground: true,
       displayHeaderFooter: true,
       // headerTemplate: `<div style="font-size: 10px; padding-bottom: 5px; display: flex; justify-content: space-between; width: 100%; margin-left: 20px; margin-right: 20px;">
