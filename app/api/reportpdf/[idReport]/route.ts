@@ -4,35 +4,40 @@ export async function GET(request: Request, { params }: { params: { idReport: nu
   console.log('Iniciando o puppeteer')
 
   const browser = await puppeteer.launch({
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    // --disable-dev-shm-usage: o /dev/shm do Docker tem só 64MB e o Chromium trava em páginas grandes
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+    protocolTimeout: 180_000,
   })
   console.log('Navegador iniciado.')
 
-  const page = await browser.newPage()
-  console.log('Nova página aberta.')
+  try {
+    const page = await browser.newPage()
+    console.log('Nova página aberta.')
 
-  await page.setViewport({ width: 1600, height: 65536 })
-  console.log('Tamanho da página definido.')
+    await page.setViewport({ width: 1600, height: 65536 })
+    console.log('Tamanho da página definido.')
 
-  page.goto(`${process.env.NEXT_PUBLIC_URL_APP}/reportviewer/${params.idReport}`, {
-    waitUntil: 'networkidle2',
-  })
+    // Acessa o próprio app por dentro do container, sem passar pelo proxy público
+    const baseUrl = process.env.URL_APP ?? process.env.NEXT_PUBLIC_URL_APP
+    await page.goto(`${baseUrl}/reportviewer/${params.idReport}`, {
+      waitUntil: 'networkidle2',
+      timeout: 120_000,
+    })
+    console.log('Pagina carregada.')
 
-  console.log('Pagina carregada.')
+    await page.emulateMediaType('print')
+    console.log('Tipo de midia definido.')
 
-  await page.emulateMediaType('print')
-  console.log('Tipo de midia definido.')
-
-  const pdf = await page.pdf({
-    format: 'LETTER',
-    printBackground: true,
-    displayHeaderFooter: true,
-    // headerTemplate: `<div style="font-size: 10px; padding-bottom: 5px; display: flex; justify-content: space-between; width: 100%; margin-left: 20px; margin-right: 20px;">
-    //   <div style="text-align: left;">
-    //     <span class="date"></span>
-    //   </div>
-    // </div>`,
-    footerTemplate: `
+    const pdf = await page.pdf({
+      format: 'LETTER',
+      printBackground: true,
+      displayHeaderFooter: true,
+      // headerTemplate: `<div style="font-size: 10px; padding-bottom: 5px; display: flex; justify-content: space-between; width: 100%; margin-left: 20px; margin-right: 20px;">
+      //   <div style="text-align: left;">
+      //     <span class="date"></span>
+      //   </div>
+      // </div>`,
+      footerTemplate: `
       <div style="font-size: 10px; padding-top: 5px; display: flex; justify-content: space-between; width: 100%; margin-left: 20px; margin-right: 20px;">
         <div style="text-align: left;">
           <span>${new Date().toLocaleDateString('pt-BR')}</span>
@@ -42,22 +47,23 @@ export async function GET(request: Request, { params }: { params: { idReport: nu
         </div>
       </div>
     `,
-    margin: {
-      top: '20px',
-      right: '15px',
-      bottom: '20px',
-      left: '15px',
-    },
-  })
-  console.log('PDF gerado.')
+      margin: {
+        top: '20px',
+        right: '15px',
+        bottom: '20px',
+        left: '15px',
+      },
+    })
+    console.log('PDF gerado.')
 
-  await browser.close()
-  console.log('Navegador fechado.')
-
-  return new Response(new Uint8Array(pdf), {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/pdf',
-    },
-  })
+    return new Response(new Uint8Array(pdf), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+      },
+    })
+  } finally {
+    await browser.close()
+    console.log('Navegador fechado.')
+  }
 }
