@@ -29,7 +29,7 @@ export async function reduceImageSize(buffer: ArrayBuffer, width: number, height
     .toBuffer()
 
   const formData = new FormData()
-  formData.append('file', new Blob([result], { type: 'image/jpeg' }))
+  formData.append('file', new Blob([new Uint8Array(result)], { type: 'image/jpeg' }))
 
   return formData
 }
