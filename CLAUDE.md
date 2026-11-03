@@ -51,7 +51,7 @@ Não há camada de API para o CRUD: cada rota em `app/(dashboard)/**` tem um `ac
 ### Autenticação e rotas
 
 - `lib/auth.ts`: Credentials com `bcryptjs` contra `User.passwordHash`, sessão JWT de 4h, `role` e `id` copiados para a sessão (tipos em `types/next-auth.d.ts`). `lib/auth.config.ts` é a versão enxuta usada no `middleware.ts`.
-- `middleware.ts` redireciona para `/signin` quando a rota está em `config/routes/index.ts` → `protectedRoutes`. A comparação em `lib/route/index.ts` é por igualdade exata do pathname, então entradas dinâmicas como `/relatorio/[id]`, `/reportviewer/[id]` e `/api/reportpdf/[idReport]` **não protegem nada**, e o matcher do middleware ainda exclui `/api`. Na prática, `/reportviewer/:id` e `/api/reportpdf/:id` são públicos, e a geração de PDF depende disso (o Chromium acessa a página sem cookie). Proteger essas rotas exige dar outra forma de acesso ao Puppeteer.
+- `middleware.ts` redireciona para `/signin` quando a rota está em `config/routes/index.ts` → `protectedRoutes`. A comparação em `lib/route/index.ts` é por igualdade exata do pathname, então entradas dinâmicas como `/relatorio/[id]`, `/reportviewer/[id]` e `/api/reportpdf/[idReport]` **não protegem nada**, e o matcher do middleware ainda exclui `/api`. Na prática, `/reportviewer/:id` e `/api/reportpdf/:id` são públicos, e a geração de PDF depende disso (o Chromium acessa a página sem cookie). `/relatorio/[id]` e `/` só exigem login porque a própria página chama `redirect('/signin')`. Proteger essas rotas exige dar outra forma de acesso ao Puppeteer (ver `DEBITO_TECNICO.md`).
 
 ### Geração de PDF
 

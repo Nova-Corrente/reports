@@ -18,3 +18,23 @@ Itens conhecidos que ficaram para depois. Ao resolver um item, remova-o daqui no
 - Evitar gerar o mesmo relatório duas vezes em paralelo. O leitor de PDF do navegador pode repetir a requisição.
 
 **Paliativo atual:** o timeout do `page.goto` e do `page.pdf` foi aumentado para 120 s, e o navegador é sempre fechado num `finally`.
+
+## Rotas dinâmicas sem proteção de login
+
+**Onde:** `middleware.ts`, `lib/route/index.ts`, `config/routes/index.ts`
+
+**Problema:** o middleware só exige login quando o pathname está em `protectedRoutes`, e `createRouteMatchers` compara por igualdade exata de texto. Entradas como `/relatorio/[id]`, `/reportviewer/[id]` e `/api/reportpdf/[idReport]` nunca casam com o caminho real (`/reportviewer/774`), então não protegem nada. Além disso, o `matcher` do middleware exclui tudo que começa com `/api`.
+
+Verificado em produção em 03/11/2026, sem estar logado:
+
+- `/reportviewer/774` responde 200 e mostra o relatório completo, com fotos.
+- `/api/reportpdf/:id` gera e devolve o PDF.
+- `/relatorio/774` redireciona para `/signin`, mas só porque a própria página chama `redirect('/signin')`, não por causa do middleware.
+
+**Risco:** qualquer pessoa que saiba ou adivinhe um id (são sequenciais) vê os relatórios dos clientes e pode disparar gerações de PDF, que são pesadas (ver item da fila acima).
+
+**Proposta:**
+
+- Fazer o matcher de rotas aceitar padrões dinâmicos (prefixo ou regex) em vez de igualdade exata.
+- Proteger `/api/reportpdf/:id` checando a sessão (`auth()`) dentro da rota.
+- Dar ao Puppeteer outra forma de acessar `/reportviewer/:id`, já que hoje ele depende da página ser pública. Por exemplo, um token assinado e de curta duração na URL, ou repassar o cookie de sessão do usuário que pediu o PDF.
