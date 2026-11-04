@@ -5,6 +5,8 @@ import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client
 export const clientS3 = new S3Client({
   region: CONFIG.providers.storage.region,
   endpoint: CONFIG.providers.storage.endpoint,
+  // MinIO usa o bucket no caminho (host/bucket/key). Sem isso o SDK monta bucket.host, que não resolve no Docker
+  forcePathStyle: true,
   credentials: {
     accessKeyId: CONFIG.providers.storage.accessKeyId,
     secretAccessKey: CONFIG.providers.storage.secretAccessKey,
