@@ -6,6 +6,11 @@ const storageUrl = process.env.STORAGE_ENDPOINT
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    // Sem isso o next/image entrega SVG com a URL crua do storage, que o navegador não resolve
+    // (host interno do Docker). A CSP impede que scripts dentro do SVG rodem.
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: [
       ...(storageUrl
         ? [
