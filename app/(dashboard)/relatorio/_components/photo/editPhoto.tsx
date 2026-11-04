@@ -5,7 +5,8 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@/component
 import type { PhotoAnalisysType } from '@/lib/types'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ImagePlus, PenIcon, RotateCcw, RotateCw } from 'lucide-react'
-import Image from 'next/image'
+// Renomeado para não esconder o `Image` do DOM, usado no redimensionamento abaixo
+import NextImage from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { FileWithPath } from 'react-dropzone'
@@ -187,7 +188,7 @@ export default function EditPhoto({ dialogTitle, dialogDescription, photoAnalisy
             <input {...getInputProps()} />
             {imageUrl ? (
               // next/image passa pelo servidor: a URL gravada é do host interno do MinIO, que o navegador não resolve
-              <Image
+              <NextImage
                 src={imageUrl}
                 alt="Imagem processada"
                 width={400}
