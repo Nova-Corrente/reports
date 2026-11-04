@@ -5,6 +5,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@/component
 import type { PhotoAnalisysType } from '@/lib/types'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ImagePlus, PenIcon, RotateCcw, RotateCw } from 'lucide-react'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { FileWithPath } from 'react-dropzone'
@@ -185,7 +186,14 @@ export default function EditPhoto({ dialogTitle, dialogDescription, photoAnalisy
           >
             <input {...getInputProps()} />
             {imageUrl ? (
-              <img src={imageUrl} alt="Imagem processada" className="border border-gray-200 rounded-lg mx-auto" />
+              // next/image passa pelo servidor: a URL gravada é do host interno do MinIO, que o navegador não resolve
+              <Image
+                src={imageUrl}
+                alt="Imagem processada"
+                width={400}
+                height={300}
+                className="border border-gray-200 rounded-lg mx-auto"
+              />
             ) : (
               <div className="px-2 bg-muted rounded-lg flex flex-col h-full items-center justify-center w-full">
                 <ImagePlus className="w-8 h-8 text-muted-foreground" />

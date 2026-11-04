@@ -45,7 +45,8 @@ Não há camada de API para o CRUD: cada rota em `app/(dashboard)/**` tem um `ac
 - Upload: o client manda `FormData` para uma Server Action, que redimensiona com `sharp` (`lib/imageSharp.ts`) e grava via `service/storage/index.ts` (`PutObjectCommand`).
 - O banco guarda a **URL absoluta** `${STORAGE_ENDPOINT}/${STORAGE_BUCKET}/<key>` (em `PhotoAnalisys.url` e `Client.img`). `deleteObject` remove esse prefixo para achar a key, então trocar `STORAGE_ENDPOINT` exige reescrever as URLs no banco.
 - As imagens são exibidas com `next/image` (o servidor Next busca no MinIO, que precisa permitir leitura anônima no bucket). `next.config.mjs` libera o host do `STORAGE_ENDPOINT` em `remotePatterns` **no build**.
-- Em produção o endpoint é o host interno da rede Docker do Coolify, que o navegador não resolve: qualquer `<img src>` com a URL crua do storage (ex.: `editPhoto.tsx`, `UploadImage.tsx`) não carrega no browser.
+- Em produção o endpoint é o host interno da rede Docker do Coolify, que o navegador não resolve: qualquer `<img src>` com a URL crua do storage não carrega no browser. Use sempre `next/image` (que também aceita os data URLs das prévias de upload).
+- O `S3Client` precisa de `forcePathStyle: true`: com endpoint em nome de host, o SDK monta `<bucket>.<host>`, que não resolve.
 - `STORAGE_REGION` precisa bater com a região do MinIO (`LOCAL` em produção).
 
 ### Autenticação e rotas
