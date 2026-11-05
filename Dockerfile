@@ -21,6 +21,8 @@ RUN npx prisma generate
 
 # O next.config.mjs lê STORAGE_ENDPOINT no build: o Coolify precisa
 # expor essa variável também em build time
+ARG STORAGE_ENDPOINT
+ARG NEXT_PUBLIC_URL_APP
 RUN npm run build
 
 ENV NODE_ENV=production \

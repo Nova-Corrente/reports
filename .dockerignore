@@ -7,3 +7,5 @@ docker-compose.yml
 .next
 .env*
 !.env.example
+infra
+migration

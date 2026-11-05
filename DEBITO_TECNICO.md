@@ -51,3 +51,21 @@ Verificado em produção em 03/11/2026, sem estar logado:
 - **Tiptap 2 → 3** (45 moderate, todos a mesma falha): `mergeAttributes()` aceita uma chave `__proto__` e a transforma em atributo do DOM. Migração grande do editor de texto rico.
 
 **Proposta:** depois do corte do servidor, atacar um por vez, com deploy e teste entre eles: Puppeteer e Zod primeiro (menores), depois Next e Tiptap.
+
+## Migration antiga quebra o `migrate deploy` em banco vazio
+
+**Onde:** `prisma/migrations/20250103122551_add_index_to_photoanalisys`
+
+**Problema:** essa migration é anterior ao baseline `20250110033712_restart_bd`, então roda primeiro e tenta mexer na tabela `PhotoAnalisys` antes de ela existir. Num banco vazio, o `prisma migrate deploy` do `CMD` do Dockerfile falha e o app não sobe. Em produção não aparece porque o banco vem de dump, já com o histórico em `_prisma_migrations`.
+
+**Paliativo atual:** o `infra/local` marca a migration como aplicada (`prisma migrate resolve --applied`) antes do `migrate deploy`.
+
+**Proposta:** remover a pasta da migration, se o índice já estiver no baseline, ou movê-la para depois dele. Conferir antes como ela está registrada no `_prisma_migrations` de produção.
+
+## AWS SDK vai exigir Node 22
+
+**Onde:** `Dockerfile` (`node:20-slim`), `@aws-sdk/*` com `^` no `package.json`
+
+**Problema:** o SDK avisa que as versões publicadas depois da primeira semana de janeiro de 2027 exigem Node ≥ 22. Como não há lockfile, o deploy passa a resolver essas versões sozinho e pode quebrar no Node 20.
+
+**Proposta:** subir a imagem para `node:22-slim` e validar no `infra/local`, ou fixar o `@aws-sdk/*` numa versão até a troca.
