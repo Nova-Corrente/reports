@@ -38,3 +38,16 @@ Verificado em produção em 03/11/2026, sem estar logado:
 - Fazer o matcher de rotas aceitar padrões dinâmicos (prefixo ou regex) em vez de igualdade exata.
 - Proteger `/api/reportpdf/:id` checando a sessão (`auth()`) dentro da rota.
 - Dar ao Puppeteer outra forma de acessar `/reportviewer/:id`, já que hoje ele depende da página ser pública. Por exemplo, um token assinado e de curta duração na URL, ou repassar o cookie de sessão do usuário que pediu o PDF.
+
+## Vulnerabilidades de dependências que exigem versão major
+
+**Onde:** `package.json`
+
+**Problema:** em 05/11/2026 o `npm audit` caiu de 79 para 56 alertas (45 moderate, 10 high, 1 critical) só com atualizações sem quebra. O que sobrou só se resolve subindo versão major:
+
+- **Next 14 → 15/16** (o critical e o high do `postcss` interno): a linha 14 não recebe mais correções. Os alertas incluem DoS no otimizador de imagens com `remotePatterns`, DoS na desserialização de Server Components e request smuggling em `rewrites`. Exige migrar para APIs assíncronas (`params`, `cookies()`, `headers()`) e revalidar Auth.js e o build no Coolify.
+- **Puppeteer 23 → 25** (9 high): `extract-zip`, `proxy-agent`/`get-uri`/`basic-ftp` e o `zod` do `chromium-bidi`. Na prática não são exercitados em produção, pois o download do Chromium está desligado (`PUPPETEER_SKIP_DOWNLOAD`) e não há proxy. A rota de PDF usa só `launch`, `goto`, `pdf`, que mudaram pouco, mas precisa de teste com relatórios grandes.
+- **Zod 3 → 4** (1 high): consumo de memória ao validar coleções grandes com limites. Exige revisar os schemas e o `@hookform/resolvers`.
+- **Tiptap 2 → 3** (45 moderate, todos a mesma falha): `mergeAttributes()` aceita uma chave `__proto__` e a transforma em atributo do DOM. Migração grande do editor de texto rico.
+
+**Proposta:** depois do corte do servidor, atacar um por vez, com deploy e teste entre eles: Puppeteer e Zod primeiro (menores), depois Next e Tiptap.
