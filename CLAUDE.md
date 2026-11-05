@@ -28,9 +28,28 @@ npx prisma generate
 npx prisma db seed           # prisma/seed.ts (usuário inicial e tipos de estrutura)
 ```
 
-Não há testes automatizados. Para validar uma mudança, rode `npm run build`. Para testar como em produção (imagem do Dockerfile, Postgres, MinIO, PDF), use `infra/local` (ver o README de lá). Como não há lockfile, o build no deploy pode pegar `@types/node` mais novo que o local; erros de tipo com `Buffer`/`Uint8Array` em `Blob` e `Response` já apareceram por isso (converta com `new Uint8Array(...)`).
+Não há testes automatizados. Para validar uma mudança, rode `npm run build`. Para testar como em produção (imagem do Dockerfile, Postgres, MinIO, PDF), use `infra/local` (ver "Como testar" abaixo e o README de lá). Como não há lockfile, o build no deploy pode pegar `@types/node` mais novo que o local; erros de tipo com `Buffer`/`Uint8Array` em `Blob` e `Response` já apareceram por isso (converta com `new Uint8Array(...)`).
 
 Estilo (Biome): 2 espaços, linha de 120, aspas simples, sem ponto e vírgula. `components/ui/**` é gerado pelo shadcn e fica fora do lint.
+
+## Como testar
+
+Toda mudança é testada no `infra/local`, com o app rodando como em produção. A divisão de trabalho é esta:
+
+- **O usuário sobe e controla o ambiente**: infra, serviços e app (`docker compose up -d --build --wait` em `infra/local`), inclusive o rebuild depois de mudanças no código.
+- **O Claude testa tudo o que a mudança exigir**, sem pedir licença para cada passo. Pode usar:
+  - o navegador em http://localhost:3100;
+  - `curl` no app e nas rotas de API;
+  - `docker compose logs`, `ps` e `exec` para ler logs e rodar comandos;
+  - `psql` no banco local, inclusive criando dados de teste;
+  - `mc` no MinIO local.
+- **Quando precisar de intervenção, o Claude pede ao usuário** e espera, informando o comando exato e o motivo. Entram aqui:
+  - subir, parar ou reconstruir serviços (`up`, `down`, `--build`, `restart`);
+  - qualquer ação que apague dados (`down -v`, `restore-backup.sh`, `DROP`, limpar o bucket);
+  - mudar o `.env` local;
+  - algo que só o usuário consegue fazer, como fornecer um backup real ou acessar um sistema externo.
+- Se o ambiente não estiver de pé ou estiver com código desatualizado, o Claude avisa e pede o rebuild, em vez de testar contra uma versão velha.
+- Para entrar no app, use o usuário do `prisma/seed.ts`. Para conta de teste, crie uma nova e não reutilize credenciais reais. Ao terminar, informe o que foi testado, o que passou, e o que não pôde ser testado e por quê.
 
 ## Arquitetura
 
