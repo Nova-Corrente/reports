@@ -36,13 +36,21 @@ docker compose up -d --build --wait app
 
 ## Testar com dados reais
 
-`restore-backup.sh` carrega um backup gerado por `migration/1-backup.sh` (pasta com `db.dump` e `minio/`). Ele apaga o banco e o bucket locais, restaura, troca o prefixo das URLs das fotos e dos logos pelo MinIO local e sobe o app.
+`restore-backup.sh` recria o ambiente do zero com um backup de produção. A cada execução ele:
+
+1. apaga tudo: containers, banco e bucket locais;
+2. restaura o dump no Postgres;
+3. alinha o histórico de migrations do Prisma, como foi feito na migração para o Coolify (registro com falha da `20250109192353_`, default do `ScopeService.name` e baseline), e confere que o schema bate com o `prisma/schema.prisma`;
+4. copia as imagens para o bucket e troca o prefixo das URLs das fotos e dos logos pelo MinIO local;
+5. sobe o app.
 
 ```bash
-./restore-backup.sh ~/backup-reports/backup-AAAAMMDD-HHMMSS
-```
+# dump e pasta com o conteúdo do bucket (clients/ e reports/)
+./restore-backup.sh ~/backup-reports/prod-qualy.dump ~/backup-reports/minio/prod-reports
 
-São dados de clientes: não deixe o backup em pasta sincronizada nem versione nada dele.
+# ou uma pasta no formato do migration/1-backup.sh (db.dump + minio/)
+./restore-backup.sh migration/backup-AAAAMMDD-HHMMSS
+```
 
 ## Limpar
 
@@ -53,7 +61,7 @@ docker compose down -v     # apaga também o banco e as fotos locais
 
 ## Diferenças conhecidas
 
-- O Postgres segue o `postgresql-database-interno` do Coolify (`postgres:18-alpine`, mesmo ambiente do app Reports). A imagem do serviço MinIO de produção não aparece na API do Coolify, então `MINIO_IMAGE` pode ser outra. Ajuste no `.env` se precisar.
+- O Postgres segue o banco de produção no Coolify (`postgres:17-alpine`, onde fica o `reports_prod`). A imagem do serviço MinIO de produção não aparece na API do Coolify, então `MINIO_IMAGE` pode ser outra. Ajuste no `.env` se precisar.
 - A MinIO parou de publicar as imagens `minio/minio` e `minio/mc`. Aqui se usa `coollabsio/minio`, mantida pelo Coolify, que traz o `mc` junto.
 - Num banco vazio, a migration `20250103122551_add_index_to_photoanalisys` roda antes do baseline e falha. O serviço `migrate` a marca como aplicada antes do `migrate deploy` (ver `DEBITO_TECNICO.md`). Em produção o banco vem de dump e não passa por isso.
 - Não há proxy HTTPS na frente do app. O acesso é direto por `http://localhost:3100`.

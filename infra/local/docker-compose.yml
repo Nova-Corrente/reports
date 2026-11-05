@@ -5,13 +5,13 @@ name: reports-local
 
 services:
   db:
-    image: postgres:${POSTGRES_VERSION:-18}-alpine
+    image: postgres:${POSTGRES_VERSION:-17}-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      # A partir do Postgres 18 a imagem espera o volume em /var/lib/postgresql
+      # Montado um nível acima do PGDATA: funciona no 17 e no 18, que mudou o caminho
       - db-data:/var/lib/postgresql
     ports:
       - '127.0.0.1:${DB_PORT:-5433}:5432'
