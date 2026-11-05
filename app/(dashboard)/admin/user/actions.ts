@@ -1,7 +1,7 @@
 'use server'
 import prisma from '@/lib/prisma'
 import type { Role, UserCreate, UserRePwd, UserUpdate } from '@/lib/types'
-import { hash } from 'bcrypt'
+import { hash } from 'bcryptjs'
 
 export async function createUser(user: UserCreate) {
   const passwordHash = await hash(user.password, 10)
