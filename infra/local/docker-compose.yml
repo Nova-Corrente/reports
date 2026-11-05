@@ -1,0 +1,112 @@
+# Ambiente local que reproduz a produção (Coolify): mesma imagem do Dockerfile, Postgres e MinIO
+# numa rede Docker interna. O app fala com o MinIO pelo host interno "minio", que o navegador não
+# resolve, igual em produção. Uso: ver infra/local/README.md
+name: reports-local
+
+services:
+  db:
+    image: postgres:${POSTGRES_VERSION:-18}-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      # A partir do Postgres 18 a imagem espera o volume em /var/lib/postgresql
+      - db-data:/var/lib/postgresql
+    ports:
+      - '127.0.0.1:${DB_PORT:-5433}:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d ${POSTGRES_DB}']
+      interval: 5s
+      retries: 20
+
+  minio:
+    # A MinIO parou de publicar imagens; esta é a mantida pelo Coolify e traz também o mc
+    image: ${MINIO_IMAGE:-coollabsio/minio:latest}
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: ${STORAGE_ACCESS_KEY_ID}
+      MINIO_ROOT_PASSWORD: ${STORAGE_SECRET_ACCESS_KEY}
+      # Em produção o MinIO responde na região LOCAL; o S3Client assina com STORAGE_REGION
+      MINIO_SITE_REGION: ${STORAGE_REGION}
+    volumes:
+      - minio-data:/data
+    ports:
+      - '127.0.0.1:${MINIO_API_PORT:-9100}:9000'
+      - '127.0.0.1:${MINIO_CONSOLE_PORT:-9101}:9001'
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      retries: 20
+
+  # Cria o bucket com leitura anônima, que o next/image exige para buscar as fotos
+  minio-init:
+    image: ${MINIO_IMAGE:-coollabsio/minio:latest}
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MC_HOST_local: http://${STORAGE_ACCESS_KEY_ID}:${STORAGE_SECRET_ACCESS_KEY}@minio:9000
+    entrypoint: >
+      sh -c "mc mb --ignore-existing local/${STORAGE_BUCKET}
+      && mc anonymous set download local/${STORAGE_BUCKET}"
+    restart: 'no'
+
+  # Prepara o banco antes do app subir. Num banco vazio, a migration 20250103122551 roda antes do
+  # baseline e falha (ver DEBITO_TECNICO.md), então é marcada como aplicada. Banco vazio recebe o seed.
+  migrate:
+    image: reports-local-app
+    # A imagem é construída pelo serviço app, não existe em registry
+    pull_policy: never
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    entrypoint: >
+      sh -c "npx prisma migrate resolve --applied 20250103122551_add_index_to_photoanalisys >/dev/null 2>&1 || true;
+      npx prisma migrate deploy
+      && (node -e \"new (require('@prisma/client').PrismaClient)().user.count().then(c => process.exit(c ? 0 : 1))\"
+      || npx prisma db seed)"
+    restart: 'no'
+
+  app:
+    image: reports-local-app
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      # Lidas no next build, como as variáveis marcadas como build time no Coolify
+      args:
+        STORAGE_ENDPOINT: ${STORAGE_ENDPOINT}
+        NEXT_PUBLIC_URL_APP: ${NEXT_PUBLIC_URL_APP}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_URL: ${AUTH_URL}
+      URL_APP: ${URL_APP}
+      NEXT_PUBLIC_URL_APP: ${NEXT_PUBLIC_URL_APP}
+      STORAGE_ENDPOINT: ${STORAGE_ENDPOINT}
+      STORAGE_REGION: ${STORAGE_REGION}
+      STORAGE_BUCKET: ${STORAGE_BUCKET}
+      STORAGE_PATH: ${STORAGE_PATH:-}
+      STORAGE_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY_ID}
+      STORAGE_SECRET_ACCESS_KEY: ${STORAGE_SECRET_ACCESS_KEY}
+    # Mesmo valor do Coolify: o Chromium do PDF precisa de /dev/shm maior que os 64MB padrão
+    shm_size: 1g
+    # O CMD roda o migrate deploy antes do next start; sem isso o --wait libera antes do app responder
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://localhost:3000/signin').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 5s
+      start_period: 60s
+      retries: 20
+    ports:
+      - '127.0.0.1:${APP_PORT:-3100}:3000'
+
+volumes:
+  db-data:
+  minio-data:

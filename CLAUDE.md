@@ -28,7 +28,7 @@ npx prisma generate
 npx prisma db seed           # prisma/seed.ts (usuário inicial e tipos de estrutura)
 ```
 
-Não há testes automatizados. Para validar uma mudança, rode `npm run build`. Como não há lockfile, o build no deploy pode pegar `@types/node` mais novo que o local; erros de tipo com `Buffer`/`Uint8Array` em `Blob` e `Response` já apareceram por isso (converta com `new Uint8Array(...)`).
+Não há testes automatizados. Para validar uma mudança, rode `npm run build`. Para testar como em produção (imagem do Dockerfile, Postgres, MinIO, PDF), use `infra/local` (ver o README de lá). Como não há lockfile, o build no deploy pode pegar `@types/node` mais novo que o local; erros de tipo com `Buffer`/`Uint8Array` em `Blob` e `Response` já apareceram por isso (converta com `new Uint8Array(...)`).
 
 Estilo (Biome): 2 espaços, linha de 120, aspas simples, sem ponto e vírgula. `components/ui/**` é gerado pelo shadcn e fica fora do lint.
 
@@ -63,4 +63,5 @@ Não há camada de API para o CRUD: cada rota em `app/(dashboard)/**` tem um `ac
 - `Dockerfile`: `node:20-slim` + Chromium e `openssl` do apt (`PUPPETEER_SKIP_DOWNLOAD`, `PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium`). O `CMD` roda `prisma migrate deploy` antes do `next start`, então migrations novas são aplicadas sozinhas no deploy. O container usa `--shm-size=1g` (configurado no Coolify) por causa do Chromium.
 - Não há `.env` na imagem; as variáveis vêm do Coolify. `STORAGE_ENDPOINT` e `NEXT_PUBLIC_URL_APP` precisam estar marcadas também como build time, pois são lidas no `next build`. `AUTH_URL`, `AUTH_SECRET`, `DATABASE_URL`, `URL_APP` e as demais `STORAGE_*` são runtime. Lista de referência em `.env.example`.
 - O histórico de migrations foi rebaseado: `20250110033712_restart_bd` é o baseline do banco atual. Migrations novas devem partir dele.
+- O `Dockerfile` declara `ARG STORAGE_ENDPOINT` e `ARG NEXT_PUBLIC_URL_APP` para o `next build`. O `infra/local` passa os dois como build args.
 - `migration/` contém scripts de apoio à migração do servidor antigo (dump do banco e espelho do bucket); não fazem parte do app.
