@@ -36,6 +36,7 @@ export default async function ProfilePage() {
           dialogTitle={'Redefinir Senha'}
           dialogDescription={'Tela para Redefinir Senha'}
           UserId={dataUser?.id ?? null}
+          askCurrentPassword
         />
       </div>
     </main>

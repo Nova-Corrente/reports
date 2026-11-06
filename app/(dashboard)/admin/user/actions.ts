@@ -1,9 +1,11 @@
 'use server'
 import prisma from '@/lib/prisma'
+import { requireRole, requireSession } from '@/lib/session'
 import type { Role, UserCreate, UserRePwd, UserUpdate } from '@/lib/types'
-import { hash } from 'bcryptjs'
+import { compare, hash } from 'bcryptjs'
 
 export async function createUser(user: UserCreate) {
+  await requireRole('ADMIN')
   const passwordHash = await hash(user.password, 10)
   try {
     const data = await prisma.user.create({
@@ -13,6 +15,7 @@ export async function createUser(user: UserCreate) {
         role: user.role,
         passwordHash,
       },
+      select: { id: true },
     })
     return data
   } catch (error) {
@@ -21,6 +24,7 @@ export async function createUser(user: UserCreate) {
 }
 
 export async function updateUser(user: UserUpdate) {
+  await requireRole('ADMIN')
   const data = await prisma.user.update({
     where: {
       id: user.id,
@@ -30,11 +34,25 @@ export async function updateUser(user: UserUpdate) {
       email: user.email,
       role: user.role,
     },
+    select: { id: true },
   })
   return data
 }
 
+// Só o ADMIN troca a senha de outra conta; quem troca a própria precisa informar a senha atual
 export async function updatePassword(user: UserRePwd) {
+  const sessionUser = await requireSession()
+  const isAdmin = sessionUser.role === 'ADMIN'
+  if (sessionUser.id !== user.id && !isAdmin) {
+    throw new Error('Sem permissão')
+  }
+  if (!isAdmin || user.currentPassword !== undefined) {
+    const current = await prisma.user.findUnique({ where: { id: user.id }, select: { passwordHash: true } })
+    const isValid = await compare(user.currentPassword ?? '', current?.passwordHash ?? '')
+    if (!isValid) {
+      return { error: 'Senha atual incorreta.' }
+    }
+  }
   const passwordHash = await hash(user.passwordHash, 10)
   const data = await prisma.user.update({
     where: {
@@ -44,10 +62,11 @@ export async function updatePassword(user: UserRePwd) {
       passwordHash,
     },
   })
-  return data
+  return { id: data.id }
 }
 
 export async function getData() {
+  await requireRole('ADMIN')
   const data = await prisma.user.findMany({
     select: {
       id: true,
@@ -64,6 +83,7 @@ export async function getData() {
 }
 
 export async function getUserAnalysts(role: Role) {
+  await requireSession()
   const data = await prisma.user.findMany({
     where: {
       role,
@@ -77,6 +97,7 @@ export async function getUserAnalysts(role: Role) {
 }
 
 export async function getUserRoleCount(role: Role) {
+  await requireSession()
   const data = await prisma.user.count({
     where: {
       role,
@@ -86,6 +107,10 @@ export async function getUserRoleCount(role: Role) {
 }
 
 export async function getUserByEmail(email: string) {
+  const sessionUser = await requireSession()
+  if (sessionUser.email !== email && sessionUser.role !== 'ADMIN') {
+    throw new Error('Sem permissão')
+  }
   const data = await prisma.user.findUnique({
     where: {
       email,

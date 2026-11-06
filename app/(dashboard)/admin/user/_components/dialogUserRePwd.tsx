@@ -15,15 +15,24 @@ type UserRePwdProps = {
   dialogTitle: string
   dialogDescription: string
   UserId: string | null
+  // Troca da própria senha: o servidor exige a senha atual
+  askCurrentPassword?: boolean
 }
 
-export function DialogUserRePwd({ dialogButton, dialogTitle, dialogDescription, UserId }: UserRePwdProps) {
+export function DialogUserRePwd({
+  dialogButton,
+  dialogTitle,
+  dialogDescription,
+  UserId,
+  askCurrentPassword = false,
+}: UserRePwdProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
 
   const form = useForm<UserRePwdSchema>({
     resolver: zodResolver(userRePwdSchema),
     values: {
+      currentPassword: '',
       passwordHash: '',
       confirmPassword: '',
     },
@@ -31,10 +40,19 @@ export function DialogUserRePwd({ dialogButton, dialogTitle, dialogDescription, 
 
   async function onSubmit(values: UserRePwdSchema) {
     if (UserId) {
-      await updatePassword({
+      if (askCurrentPassword && !values.currentPassword) {
+        form.setError('currentPassword', { message: 'Informe a senha atual.' })
+        return
+      }
+      const result = await updatePassword({
         id: UserId,
         passwordHash: values.passwordHash,
+        currentPassword: askCurrentPassword ? values.currentPassword : undefined,
       })
+      if ('error' in result) {
+        form.setError('currentPassword', { message: result.error })
+        return
+      }
       router.refresh()
       setOpen(false)
       form.reset()
@@ -57,6 +75,21 @@ export function DialogUserRePwd({ dialogButton, dialogTitle, dialogDescription, 
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+            {askCurrentPassword && (
+              <FormField
+                control={form.control}
+                name="currentPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Senha atual</FormLabel>
+                    <FormControl>
+                      <Input placeholder="********" type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <FormField
               control={form.control}
               name="passwordHash"

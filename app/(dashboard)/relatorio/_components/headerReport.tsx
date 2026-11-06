@@ -112,7 +112,6 @@ export default function HeaderReport({ relatorioHeader, descriptions, photoAnali
               dialogDescription={'Adicione um novo serviço'}
               dialogTitle={'Adicionar Serviço'}
               idReport={id}
-              userId={user.id}
               serviceDescription={descriptions}
             />
           ) : (

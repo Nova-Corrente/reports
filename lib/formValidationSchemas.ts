@@ -25,6 +25,7 @@ export type UserSchema = z.infer<typeof userSchema>
 export const userRePwdSchema = z
   .object({
     id: z.string().optional(),
+    currentPassword: z.string().optional(),
     passwordHash: z.string().min(8, {
       message: 'A senha deve ter pelo menos 8 caracteres.',
     }),

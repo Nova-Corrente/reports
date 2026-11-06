@@ -22,7 +22,6 @@ import { createReport } from '../actions'
 export function DialogRelatorioForm({
   dialogButton,
   dialogTitle,
-  dataUser,
   technicianData,
   siteData,
   scopeServiceData,
@@ -44,15 +43,12 @@ export function DialogRelatorioForm({
   })
 
   async function onSubmit(values: ReportSchema) {
-    const idUser = await dataUser?.id
-
     try {
       await createReport({
         scopeServiceId: values.scopeServiceId,
         siteId: values.siteId,
         technicianId: values.technicianId,
         dateService: values.dateService,
-        userId: idUser || '',
       })
       router.refresh()
       setOpen(false)

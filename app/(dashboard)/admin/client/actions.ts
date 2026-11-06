@@ -1,10 +1,12 @@
 'use server'
 import prisma from '@/lib/prisma'
+import { requireSession } from '@/lib/session'
 import type { ClientType } from '@/lib/types'
 import { uploadObject } from '@/service/storage'
 import type { Client } from '@prisma/client'
 
 export async function uploadClientLogo(formData: FormData, idClient: string) {
+  await requireSession()
   const file = formData.get('file') as File
 
   const binaryFile = await file.arrayBuffer()
@@ -18,6 +20,7 @@ export async function uploadClientLogo(formData: FormData, idClient: string) {
 }
 
 export async function createClient(data: ClientType) {
+  await requireSession()
   try {
     const client = await prisma.client.create({
       data: {
@@ -31,6 +34,7 @@ export async function createClient(data: ClientType) {
 }
 
 export async function updateClient(data: Client) {
+  await requireSession()
   try {
     const client = await prisma.client.update({
       where: {
@@ -47,6 +51,7 @@ export async function updateClient(data: Client) {
 }
 
 export async function getClientByName(name: string) {
+  await requireSession()
   try {
     const client = await prisma.client.findFirst({
       where: {
@@ -60,6 +65,7 @@ export async function getClientByName(name: string) {
 }
 
 export async function getClientById(id: string) {
+  await requireSession()
   try {
     const client = await prisma.client.findFirst({
       where: {
@@ -73,6 +79,7 @@ export async function getClientById(id: string) {
 }
 
 export async function getAllClient() {
+  await requireSession()
   try {
     const data = await prisma.client.findMany({
       orderBy: {

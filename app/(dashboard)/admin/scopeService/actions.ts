@@ -1,9 +1,11 @@
 'use server'
 import type { ScopeServiceSchema } from '@/lib/formValidationSchemas'
 import prisma from '@/lib/prisma'
+import { requireSession } from '@/lib/session'
 import type { ScopeService } from '@prisma/client'
 
 export async function createScopeService(data: ScopeServiceSchema) {
+  await requireSession()
   try {
     const scopeService = await prisma.scopeService.create({
       data: {
@@ -17,6 +19,7 @@ export async function createScopeService(data: ScopeServiceSchema) {
 }
 
 export async function updateScopeService(data: ScopeService) {
+  await requireSession()
   try {
     const scopeService = await prisma.scopeService.update({
       where: {
@@ -33,6 +36,7 @@ export async function updateScopeService(data: ScopeService) {
 }
 
 export async function getScopeServiceByName(name: string) {
+  await requireSession()
   try {
     const scopeService = await prisma.scopeService.findFirst({
       where: {
@@ -46,6 +50,7 @@ export async function getScopeServiceByName(name: string) {
 }
 
 export async function getScopeServiceById(id: number) {
+  await requireSession()
   try {
     const scopeService = await prisma.scopeService.findFirst({
       where: {
@@ -59,6 +64,7 @@ export async function getScopeServiceById(id: number) {
 }
 
 export async function getAllScopeService() {
+  await requireSession()
   try {
     const data = await prisma.scopeService.findMany({
       orderBy: {

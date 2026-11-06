@@ -1,8 +1,10 @@
 'use server'
 import prisma from '@/lib/prisma'
+import { requireSession } from '@/lib/session'
 import type { StructureTypeType } from '@/lib/types'
 
 export async function getAllStructuresType() {
+  await requireSession()
   try {
     const data = await prisma.structureType.findMany({
       orderBy: {
@@ -16,6 +18,7 @@ export async function getAllStructuresType() {
 }
 
 export async function createStructureType(data: StructureTypeType) {
+  await requireSession()
   try {
     const response = await prisma.structureType.create({
       data,
@@ -27,6 +30,7 @@ export async function createStructureType(data: StructureTypeType) {
 }
 
 export async function updateStructureType(data: StructureTypeType) {
+  await requireSession()
   try {
     const response = await prisma.structureType.update({
       where: {
@@ -43,6 +47,7 @@ export async function updateStructureType(data: StructureTypeType) {
 }
 
 export async function deleteStructureType(id: number) {
+  await requireSession()
   try {
     const response = await prisma.structureType.delete({
       where: {
@@ -56,6 +61,7 @@ export async function deleteStructureType(id: number) {
 }
 
 export async function getStructureTypeById(id: number) {
+  await requireSession()
   try {
     const response = await prisma.structureType.findUnique({
       where: {
@@ -69,6 +75,7 @@ export async function getStructureTypeById(id: number) {
 }
 
 export async function getStructureTypeByName(name: string) {
+  await requireSession()
   try {
     const response = await prisma.structureType.findFirst({
       where: {
