@@ -23,13 +23,13 @@ Nenhuma Server Action nem rota de API checa sessão ou role. Server Actions são
 
 | # | Item | Onde | Impacto | Esforço | Decisão | Quando |
 |---|---|---|---|---|---|---|
-| 0.1 | Criar `requireSession()`/`requireRole()` e chamar no início de **todas** as Server Actions e rotas `app/api/*`. Fecha a troca de senha de qualquer conta, a criação de ADMIN, a exclusão de fotos do MinIO e a aprovação ou reabertura de relatórios. | `(d)/**/actions.ts`, `app/api/**` | alto | M | fazer | antes do corte |
-| 0.2 | `updatePassword`: só o próprio usuário (com a senha atual) ou ADMIN | `(d)/admin/user/actions.ts:37` | alto | P | fazer | antes do corte |
-| 0.3 | `createUser`/`updateUser`: só ADMIN pode definir a role; páginas `admin/*` checam a role no servidor | `(d)/admin/user/actions.ts:6,23`, `(d)/admin/*/page.tsx` | alto | P | fazer | antes do corte |
-| 0.4 | `getRelatorios` traz o `User` inteiro, com `passwordHash`, para o navegador. Trocar por `select: { id, name }` | `(d)/relatorio/actions.ts:360` | alto | P | fazer | antes do corte |
-| 0.5 | `userId` vindo da sessão, não do cliente, em `createReport` e `createDescriptionAnalisys` | `(d)/relatorio/actions.ts:200,262` | alto | P | fazer | antes do corte |
+| 0.1 | Criar `requireSession()`/`requireRole()` e chamar no início de **todas** as Server Actions e rotas `app/api/*`. Fecha a troca de senha de qualquer conta, a criação de ADMIN, a exclusão de fotos do MinIO e a aprovação ou reabertura de relatórios. | `(d)/**/actions.ts`, `app/api/**` | alto | M | ✅ fazer (#6) | antes do corte |
+| 0.2 | `updatePassword`: só o próprio usuário (com a senha atual) ou ADMIN | `(d)/admin/user/actions.ts:37` | alto | P | ✅ fazer (#6) | antes do corte |
+| 0.3 | `createUser`/`updateUser`: só ADMIN pode definir a role; páginas `admin/*` checam a role no servidor | `(d)/admin/user/actions.ts:6,23`, `(d)/admin/*/page.tsx` | alto | P | ✅ fazer (#6) | antes do corte |
+| 0.4 | `getRelatorios` traz o `User` inteiro, com `passwordHash`, para o navegador. Trocar por `select: { id, name }` | `(d)/relatorio/actions.ts:360` | alto | P | ✅ fazer (#6) | antes do corte |
+| 0.5 | `userId` vindo da sessão, não do cliente, em `createReport` e `createDescriptionAnalisys` | `(d)/relatorio/actions.ts:200,262` | alto | P | ✅ fazer (#6) | antes do corte |
 | 0.6 | Trocar o `AUTH_SECRET` real versionado por um placeholder; conferir no Coolify se a produção usa o mesmo valor e, se usar, trocar | `.env.example:10` | alto | P | descartar | antes do corte |
-| 0.7 | Remover a rota pública `app/teste` (expõe IPs internos) e `components/teste` | `app/teste`, `components/teste` | médio | P | fazer | antes do corte |
+| 0.7 | Remover a rota pública `app/teste` (expõe IPs internos) e `components/teste` | `app/teste`, `components/teste` | médio | P | ✅ fazer (#6) | antes do corte |
 
 ## Fase 1: segurança restante
 
