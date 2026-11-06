@@ -1,5 +1,7 @@
 'use server'
 import prisma from '@/lib/prisma'
+import * as reportData from '@/lib/reportData'
+import { requireSession } from '@/lib/session'
 import type {
   DescriptionAnalisysType,
   PhotoAnalisysType,
@@ -14,12 +16,14 @@ import sharp from 'sharp'
 import { revalidatePath } from 'next/cache'
 
 export async function teste(file: ArrayBuffer) {
+  await requireSession()
   const result = await sharp(file).toBuffer()
 
   return result
 }
 
 export async function reduceImageSize(buffer: ArrayBuffer, width: number, height: number) {
+  await requireSession()
   const result = await sharp(buffer)
     .resize(width, height, {
       fit: 'fill',
@@ -35,6 +39,7 @@ export async function reduceImageSize(buffer: ArrayBuffer, width: number, height
 }
 
 export async function upLoadPhotoAnalisys(formData: FormData, idReport: number) {
+  await requireSession()
   if (!formData || !idReport) {
     throw new Error('Parâmetros inválidos')
   }
@@ -54,6 +59,7 @@ export async function upLoadPhotoAnalisys(formData: FormData, idReport: number) 
 }
 
 export async function photoAnalisysLength(idReport: number) {
+  await requireSession()
   return await prisma.photoAnalisys.count({
     where: {
       idReport,
@@ -62,6 +68,7 @@ export async function photoAnalisysLength(idReport: number) {
 }
 
 export async function savePhotoAnalisys(data: PhotoAnalisysType) {
+  await requireSession()
   // save relatorio to database asynchronously
   if (data.id) {
     return await prisma.photoAnalisys.update({
@@ -99,6 +106,7 @@ export async function savePhotoAnalisys(data: PhotoAnalisysType) {
 }
 
 export async function saveDescriptionAnalisys(data: { id: number; description: string }) {
+  await requireSession()
   try {
     const photo = await prisma.photoAnalisys.findUnique({
       where: { id: data.id },
@@ -125,6 +133,7 @@ export async function saveDescriptionAnalisys(data: { id: number; description: s
 }
 
 export async function getPhotoAnalisys() {
+  await requireSession()
   return await prisma.photoAnalisys.findMany({
     orderBy: {
       id: 'desc',
@@ -133,19 +142,12 @@ export async function getPhotoAnalisys() {
 }
 
 export async function getPhotoAnalisysById(id: number) {
-  const photoAnalisys = await prisma.photoAnalisys.findMany({
-    orderBy: {
-      index: 'asc',
-    },
-    where: {
-      idReport: id,
-    },
-  })
-
-  return photoAnalisys
+  await requireSession()
+  return await reportData.getPhotoAnalisysById(id)
 }
 
 export async function deletePhotoAnalisys(photoAnalisysData: PhotoAnalisysType) {
+  await requireSession()
   const id = photoAnalisysData.id
 
   const result = await deleteObject(photoAnalisysData.url)
@@ -179,6 +181,7 @@ export async function deletePhotoAnalisys(photoAnalisysData: PhotoAnalisysType) 
 }
 
 export async function updateNewIndexPhotoAnalisys(id: number, index: number) {
+  await requireSession()
   return await prisma.photoAnalisys.update({
     where: {
       id,
@@ -190,6 +193,7 @@ export async function updateNewIndexPhotoAnalisys(id: number, index: number) {
 }
 
 export async function deletePhoto(url: string) {
+  await requireSession()
   const result = await deleteObject(url)
 
   if (result) {
@@ -197,17 +201,8 @@ export async function deletePhoto(url: string) {
   }
 }
 
-export async function createDescriptionAnalisys(data: DescriptionAnalisysType, userId: string) {
-  const userExist = await prisma.user.findUnique({
-    where: {
-      id: userId,
-    },
-  })
-
-  if (!userExist) {
-    console.error('User not found')
-    return
-  }
+export async function createDescriptionAnalisys(data: DescriptionAnalisysType) {
+  const { id: userId } = await requireSession()
   const existingDescription = await prisma.descriptionAnalisys.findFirst({
     where: {
       idReport: data.idReport,
@@ -228,7 +223,11 @@ export async function createDescriptionAnalisys(data: DescriptionAnalisysType, u
 
   try {
     return await prisma.descriptionAnalisys.create({
-      data,
+      data: {
+        idReport: data.idReport,
+        service: data.service,
+        status: data.status,
+      },
     })
   } catch (error) {
     console.log(error)
@@ -236,22 +235,12 @@ export async function createDescriptionAnalisys(data: DescriptionAnalisysType, u
 }
 
 export async function getDescriptionsId(id: number) {
-  const idReport = id
-
-  return await prisma.descriptionAnalisys.findMany({
-    select: {
-      id: true,
-      idReport: true,
-      service: true,
-      status: true,
-    },
-    where: {
-      idReport,
-    },
-  })
+  await requireSession()
+  return await reportData.getDescriptionsId(id)
 }
 
 export async function deleteDescriptionService(id: number) {
+  await requireSession()
   return await prisma.descriptionAnalisys.delete({
     where: {
       id,
@@ -260,20 +249,7 @@ export async function deleteDescriptionService(id: number) {
 }
 
 export async function createReport(report: ReportCreateType) {
-  const userId = await prisma.user.findUnique({
-    where: {
-      id: report.userId,
-    },
-    select: {
-      id: true,
-    },
-  })
-
-  if (!userId) {
-    console.error('User not found')
-    return
-  }
-
+  const { id: userId } = await requireSession()
   try {
     const data = await prisma.report.create({
       data: {
@@ -281,7 +257,7 @@ export async function createReport(report: ReportCreateType) {
         siteId: report.siteId,
         technicianId: report.technicianId,
         dateService: report.dateService,
-        userId: userId?.id,
+        userId,
       },
     })
     return data
@@ -291,6 +267,7 @@ export async function createReport(report: ReportCreateType) {
 }
 
 export async function updateReport(data: ReportUpdateType) {
+  await requireSession()
   return await prisma.report.update({
     where: {
       id: data.id,
@@ -305,6 +282,7 @@ export async function updateReport(data: ReportUpdateType) {
 }
 
 export async function updateReportFinished(id: number) {
+  await requireSession()
   return await prisma.report.update({
     where: {
       id,
@@ -316,6 +294,7 @@ export async function updateReportFinished(id: number) {
 }
 
 export async function reopenReport(id: number) {
+  await requireSession()
   return await prisma.report.update({
     where: {
       id,
@@ -327,6 +306,7 @@ export async function reopenReport(id: number) {
 }
 
 export async function getRelatorios() {
+  await requireSession()
   const relatorios = await prisma.report.findMany({
     select: {
       id: true,
@@ -357,8 +337,8 @@ export async function getRelatorios() {
       },
       technician: true,
       scopeService: true,
-      analyst: true,
-      user: true,
+      analyst: { select: { id: true, name: true } },
+      user: { select: { id: true, name: true } },
     },
     orderBy: {
       id: 'desc',
@@ -368,48 +348,12 @@ export async function getRelatorios() {
 }
 
 export async function getRelatorioById(id: number) {
-  const relatorio = await prisma.report.findUnique({
-    where: {
-      id,
-    },
-    include: {
-      scopeService: true,
-      technician: true,
-      user: {
-        select: {
-          name: true,
-          email: true,
-          role: true,
-        },
-      },
-      analyst: {
-        select: {
-          name: true,
-          email: true,
-          role: true,
-        },
-      },
-      sites: {
-        select: {
-          id: true,
-          idSite: true,
-          altura: true,
-          endereco: true,
-          bairro: true,
-          cidade: true,
-          numero: true,
-          uf: true,
-          client: true,
-          structureType: true,
-          siteType: true,
-        },
-      },
-    },
-  })
-  return relatorio as Relatorio
+  await requireSession()
+  return await reportData.getRelatorioById(id)
 }
 
 export async function saveClient(data: Client) {
+  await requireSession()
   return await prisma.client.create({
     data: {
       ...data,
@@ -418,10 +362,12 @@ export async function saveClient(data: Client) {
 }
 
 export async function getClients() {
+  await requireSession()
   return await prisma.client.findMany()
 }
 
 export async function getClientById(id: string) {
+  await requireSession()
   return await prisma.client.findUnique({
     where: {
       id,
@@ -430,6 +376,7 @@ export async function getClientById(id: string) {
 }
 
 export async function getClientByName(name: string) {
+  await requireSession()
   return await prisma.client.findMany({
     where: {
       name,
@@ -438,6 +385,7 @@ export async function getClientByName(name: string) {
 }
 
 export async function getClientByPartialName(partialName: string) {
+  await requireSession()
   return await prisma.client.findMany({
     where: {
       name: {
@@ -449,11 +397,13 @@ export async function getClientByPartialName(partialName: string) {
 }
 
 export async function getTotalReportsCreated() {
+  await requireSession()
   const reportsCreated = await prisma.report.count()
   return reportsCreated
 }
 
 export async function getTotalReportsInProgress() {
+  await requireSession()
   const reportsFinished = await prisma.report.count({
     where: {
       finishedAt: {
@@ -474,6 +424,7 @@ export async function getTotalReportsInProgress() {
 }
 
 export async function getTotalReportsFinished() {
+  await requireSession()
   const reportsFinished = await prisma.report.count({
     where: {
       finishedAt: {

@@ -36,6 +36,7 @@ export type UserType = {
 export type UserRePwd = {
   id: string
   passwordHash: string
+  currentPassword?: string
 }
 
 export type UserForm = {
@@ -126,8 +127,8 @@ export type ReportRelType = {
     id: string
     name: string
   }
-  user: User
-  analyst: User
+  user: { id: string; name: string }
+  analyst: { id: string; name: string } | null
 }
 
 export type ReportType = {
@@ -141,7 +142,6 @@ export type ReportCreateType = {
   siteId: number
   technicianId: string
   dateService: Date
-  userId: string
 }
 
 export type ReportUpdateType = {
@@ -325,6 +325,5 @@ export type DialogServiceDescriptionProps = {
   dialogDescription: string
   idReport: number
   openDialog?: boolean
-  userId: string
   serviceDescription: ServiceDescriptionType[]
 }

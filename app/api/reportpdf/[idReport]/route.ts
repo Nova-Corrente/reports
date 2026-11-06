@@ -1,6 +1,12 @@
+import { auth } from '@/lib/auth'
 import puppeteer from 'puppeteer'
 
 export async function GET(request: Request, { params }: { params: { idReport: number } }) {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return new Response('Não autenticado', { status: 401 })
+  }
+
   console.log('Iniciando o puppeteer')
 
   const browser = await puppeteer.launch({

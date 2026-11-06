@@ -1,9 +1,11 @@
 'use server'
 import prisma from '@/lib/prisma'
+import { requireSession } from '@/lib/session'
 import type { Site } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 
 export async function createSite(site: Site) {
+  await requireSession()
   try {
     const data = await prisma.site.create({
       data: {
@@ -17,6 +19,7 @@ export async function createSite(site: Site) {
 }
 
 export async function updateSite(site: Site) {
+  await requireSession()
   try {
     const data = await prisma.site.update({
       where: {
@@ -34,6 +37,7 @@ export async function updateSite(site: Site) {
 }
 
 export async function getSiteById(id: number) {
+  await requireSession()
   try {
     const data = await prisma.site.findUnique({
       where: {
@@ -47,6 +51,7 @@ export async function getSiteById(id: number) {
 }
 
 export async function getSiteByName(idSite: string) {
+  await requireSession()
   try {
     const data = await prisma.site.findFirst({
       where: {
@@ -60,6 +65,7 @@ export async function getSiteByName(idSite: string) {
 }
 
 export async function getAllSites() {
+  await requireSession()
   try {
     const data = await prisma.site.findMany({
       include: {
@@ -78,6 +84,7 @@ export async function getAllSites() {
 }
 
 export async function getSiteByClientName(clientId: string) {
+  await requireSession()
   try {
     const data = await prisma.site.findMany({
       where: {

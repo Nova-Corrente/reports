@@ -101,7 +101,7 @@ export const columns: ColumnDef<ReportRelType>[] = [
     accessorKey: 'analyst.name',
 
     filterFn: (row, id, filterValue) => {
-      return row.original.analyst?.name?.toLowerCase().includes(filterValue.toLowerCase())
+      return row.original.analyst?.name?.toLowerCase().includes(filterValue.toLowerCase()) ?? false
     },
     cell: ({ row }) => {
       return <div className="text-left">{row.original.analyst === null ? 'N/A' : row.original.analyst.name}</div>

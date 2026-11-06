@@ -1,8 +1,10 @@
 'use server'
 import prisma from '@/lib/prisma'
+import { requireSession } from '@/lib/session'
 import type { TipoSiteType } from '@/lib/types'
 
 export async function getAllSitesType() {
+  await requireSession()
   try {
     const data = await prisma.siteType.findMany({
       orderBy: {
@@ -16,6 +18,7 @@ export async function getAllSitesType() {
 }
 
 export async function createSiteType(data: TipoSiteType) {
+  await requireSession()
   try {
     const response = await prisma.siteType.create({
       data,
@@ -27,6 +30,7 @@ export async function createSiteType(data: TipoSiteType) {
 }
 
 export async function updateTipoSiteType(data: TipoSiteType) {
+  await requireSession()
   try {
     const response = await prisma.siteType.update({
       where: {
@@ -43,6 +47,7 @@ export async function updateTipoSiteType(data: TipoSiteType) {
 }
 
 export async function deleteSiteType(id: number) {
+  await requireSession()
   try {
     const response = await prisma.siteType.delete({
       where: {
@@ -56,6 +61,7 @@ export async function deleteSiteType(id: number) {
 }
 
 export async function getSiteTypeById(id: number) {
+  await requireSession()
   try {
     const response = await prisma.siteType.findUnique({
       where: {
@@ -69,6 +75,7 @@ export async function getSiteTypeById(id: number) {
 }
 
 export async function getSiteTypeByName(name: string) {
+  await requireSession()
   try {
     const response = await prisma.siteType.findFirst({
       where: {

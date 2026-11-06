@@ -10,7 +10,6 @@ export function DialogServiceDescription({
   dialogTitle,
   dialogDescription,
   idReport,
-  userId,
   serviceDescription,
 }: DialogServiceDescriptionProps) {
   const [open, setOpen] = useState(false)
@@ -24,7 +23,7 @@ export function DialogServiceDescription({
           <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>{dialogDescription}</DialogDescription>
         </DialogHeader>
-        <ServiceDescriptionForm id={idReport} handleModal={() => setOpen(false)} userId={userId} />
+        <ServiceDescriptionForm id={idReport} handleModal={() => setOpen(false)} />
       </DialogContent>
     </Dialog>
   )

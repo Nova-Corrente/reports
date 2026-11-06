@@ -1,4 +1,4 @@
-import { getDescriptionsId, getPhotoAnalisysById, getRelatorioById } from '@/app/(dashboard)/relatorio/actions'
+import { getDescriptionsId, getPhotoAnalisysById, getRelatorioById } from '@/lib/reportData'
 import type { PhotoAnalisysType, Relatorio } from '@/lib/types'
 import HeaderReport from '../_components/headerReport'
 import PhotoAnalisys from '../_components/photoAnalisys'
